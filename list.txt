@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>动态表格</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<table id="recordTable">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>图片</th>
+        <th>手势类别</th>
+        <th>时间</th>
+        <th>审核类型</th>
+        <th>操作</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- 数据将动态插入这里 -->
+    </tbody>
+</table>
+
+<script>
+    // 获取上下文路径
+    const contextPath = '${pageContext.request.contextPath}';
+
+    $(document).ready(function() {
+        // 使用上下文路径构建请求URL
+        $.get(contextPath + "/api/getRecords", function(data) {
+            try {
+                var records = JSON.parse(data);
+                console.log(records); // 打印返回的数据，检查是否正确
+                var tableBody = $("#recordTable tbody");
+
+                // 遍历记录并插入表格
+                records.forEach(function(record) {
+                    var row = $("<tr>");
+                    row.append($("<td>").text(record.id));
+                    row.append($("<td>").html('<i class="fa fa-eye" onclick="viewImage(\'' + record.screenshotPath + '\')"></i>'));
+                    row.append($("<td>").text(record.gestureClass));
+                    row.append($("<td>").text(record.createTime));
+                    row.append($("<td>").text(record.judgeType));
+                    row.append($("<td>").html('<a href="#" onclick="deleteRecord(' + record.id + ')">删除</a>'));
+                    tableBody.append(row);
+                });
+            } catch (error) {
+                console.error("解析数据时出错:", error);
+            }
+        }).fail(function(error) {
+            console.error("请求数据时出错:", error);
+        });
+    });
+
+    // 查看图片函数
+    function viewImage(imagePath) {
+        window.open(imagePath, "_blank");
+    }
+
+    // 删除记录函数
+    function deleteRecord(id) {
+        if (confirm("确定要删除这条记录吗？")) {
+            // 使用上下文路径构建请求URL
+            $.get(contextPath + "/api/deleteRecord?id=" + id, function(result) {
+                if (result === "success") {
+                    alert("删除成功");
+                    location.reload();
+                } else {
+                    alert("删除失败");
+                }
+            });
+        }
+    }
+</script>
+</body>
+</html>
