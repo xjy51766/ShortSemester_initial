@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>主播行为判断系统</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+		<script>
+			tailwind.config = {
+				theme: {
+					extend: {
+						colors: {
+							primary: '#165DFF',
+							sidebar: '#1E293B',
+							success: '#36D399',
+							danger: '#F87272',
+							warning: '#FBBD23',
+							info: '#3ABFF8'
+						},
+						fontFamily: {
+							inter: ['Inter', 'sans-serif'],
+						},
+					}
+				}
+			}
+		</script>
+
+		<style type="text/tailwindcss">
+			@layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .nav-item-active {
+                @apply bg-primary/20 text-primary border-r-4 border-primary;
+            }
+            .status {
+                @apply mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300;
+            }
+            .status.error {
+                @apply bg-danger/10 text-danger;
+            }
+            .table-row-hover {
+                @apply hover:bg-gray-50 transition-colors duration-200;
+            }
+            .animate-fadeOut {
+                animation: fadeOut 0.3s ease-in-out;
+            }
+            @keyframes fadeOut {
+                from { opacity: 1; transform: translateY(0); }
+                to { opacity: 0; transform: translateY(-10px); }
+            }
+            .sortable-header {
+                @apply cursor-pointer hover:bg-gray-100 transition-colors;
+            }
+            .sort-icon {
+                @apply ml-1 opacity-0 hover:opacity-100 transition-opacity;
+            }
+            .sort-icon.active {
+                @apply opacity-100;
+            }
+            .pagination-btn {
+                @apply px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors;
+            }
+            .pagination-btn.active {
+                @apply border-primary bg-primary text-white;
+            }
+        }
+    </style>
+	</head>
+	<body class="font-inter bg-gray-50 text-gray-800">
+		<div class="flex min-h-screen">
+			<!-- 垂直导航栏 -->
+			<aside class="bg-sidebar text-white w-64 h-screen fixed left-0 top-0 z-30">
+				<!-- 导航栏头部 -->
+				<div class="p-4 border-b border-gray-700">
+					<div class="flex items-center space-x-3">
+						<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+							<i class="fa fa-bars text-xl"></i>
+						</div>
+						<h2 class="text-xl font-bold">目录</h2>
+					</div>
+				</div>
+
+				<!-- 导航菜单 -->
+				<nav class="p-2">
+					<ul class="space-y-1">
+						<li>
+							<a href="index2-1.html"
+								class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+								<i class="fa fa-home w-5 text-center"></i>
+								<span>行为识别</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="#"
+								class="nav-item-active flex items-center space-x-3 p-3 rounded-lg transition-all duration-200">
+								<i class="fa fa-list-alt w-5 text-center"></i>
+								<span>违规记录</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="#"
+								class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+								<i class="fa fa-cog w-5 text-center"></i>
+								<span>设置</span>
+							</a>
+						</li>
+
+						<li>
+							<a href="#"
+								class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+								<i class="fa fa-question-circle w-5 text-center"></i>
+								<span>帮助</span>
+							</a>
+						</li>
+					</ul>
+				</nav>
+
+				<!-- 导航栏底部 -->
+				<div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+					<div class="flex items-center space-x-3">
+						<img src="https://picsum.photos/32/32?random=100" alt="用户头像" class="w-8 h-8 rounded-full">
+						<div>
+							<!-- <p class="text-sm text-gray-400">指导老师：章老师</p> -->
+							<p class="text-sm font-medium">用户名称</p>
+							<p class="text-xs text-gray-400">user@example.com</p>
+						</div>
+					</div>
+				</div>
+			</aside>
+
+			<!-- 主内容区域 -->
+			<main class="ml-64 flex-1 p-6">
+				<!-- 页面标题和操作区 -->
+				<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+					<div>
+						<h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800">违规记录管理</h1>
+						<p class="text-gray-600 mt-1">查看和管理系统中的违规记录</p>
+					</div>
+					<div class="mt-4 md:mt-0 flex space-x-3">
+						<div class="relative">
+							<input type="text" placeholder="搜索违规记录..."
+								class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-full md:w-64">
+							<i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+						</div>
+						<button
+							class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center">
+							<i class="fa fa-refresh mr-2"></i> 刷新
+						</button>
+					</div>
+				</div>
+
+				<!-- 统计卡片 -->
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+					<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+						<div class="flex items-start justify-between">
+							<div>
+								<p class="text-gray-500 text-sm">今日违规</p>
+								<h3 class="text-2xl font-bold mt-1" id="todayCount">0</h3>
+								<p class="text-success text-sm mt-1 flex items-center" id="todayChange">
+									<i class="fa fa-arrow-up mr-1"></i> 较昨日 +0
+								</p>
+							</div>
+							<div class="w-12 h-12 rounded-lg bg-danger/10 flex items-center justify-center text-danger">
+								<i class="fa fa-exclamation-triangle text-xl"></i>
+							</div>
+						</div>
+					</div>
+					<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+						<div class="flex items-start justify-between">
+							<div>
+								<p class="text-gray-500 text-sm">本周违规</p>
+								<h3 class="text-2xl font-bold mt-1" id="weekCount">0</h3>
+								<p class="text-success text-sm mt-1 flex items-center" id="weekChange">
+									<i class="fa fa-arrow-up mr-1"></i> 较上周 +0
+								</p>
+							</div>
+							<div
+								class="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
+								<i class="fa fa-bar-chart text-xl"></i>
+							</div>
+						</div>
+					</div>
+					<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+						<div class="flex items-start justify-between">
+							<div>
+								<p class="text-gray-500 text-sm">本月违规</p>
+								<h3 class="text-2xl font-bold mt-1" id="monthCount">0</h3>
+								<p class="text-danger text-sm mt-1 flex items-center" id="monthChange">
+									<i class="fa fa-arrow-down mr-1"></i> 较上月 -0
+								</p>
+							</div>
+							<div class="w-12 h-12 rounded-lg bg-info/10 flex items-center justify-center text-info">
+								<i class="fa fa-calendar text-xl"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 违规记录表格 -->
+				<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+					<div class="p-6 border-b border-gray-100">
+						<h3 class="text-lg font-semibold">违规记录列表</h3>
+						<p class="text-gray-600 mt-1">共找到 <span class="font-medium" id="totalCount">24</span> 条违规记录</p>
+					</div>
+
+					<div class="overflow-x-auto">
+						<table class="w-full">
+							<thead>
+								<tr class="bg-gray-50">
+									<th
+										class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+										编号</th>
+									<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable-header"
+										data-sort="time">
+										违规时间
+										<i class="fa fa-sort sort-icon active"></i>
+									</th>
+									<th
+										class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+										违规类型</th>
+									<th
+										class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+										入库方式</th>
+									<th
+										class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+										操作</th>
+								</tr>
+							</thead>
+							<tbody id="violationTableBody" class="divide-y divide-gray-100">
+								<!-- 表格数据将通过JavaScript动态生成 -->
+							</tbody>
+						</table>
+					</div>
+
+					<!-- 分页 -->
+					<div class="p-6 border-t border-gray-100 flex items-center justify-between">
+						<p class="text-sm text-gray-500">
+							显示 <span id="startRecord">1</span> 到 <span id="endRecord">10</span> 条，共 <span
+								class="font-medium" id="paginationTotal">24</span> 条
+						</p>
+						<div class="flex space-x-2" id="paginationControls">
+							<!-- 分页控件将通过JavaScript动态生成 -->
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+
+		<script>
+			// 违规记录数据（仅包含"五"和"大拇指"两种违规类型，共24条）
+			const violationData = [{
+					id: 1,
+					time: '2025-06-24 09:30',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 2,
+					time: '2025-06-24 08:15',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 3,
+					time: '2025-06-23 16:45',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 4,
+					time: '2025-06-23 14:20',
+					type: '五',
+					method: '机入'
+				},
+				{
+					id: 5,
+					time: '2025-06-22 11:05',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 6,
+					time: '2025-06-22 09:10',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 7,
+					time: '2025-06-21 15:30',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 8,
+					time: '2025-06-21 10:45',
+					type: '五',
+					method: '机入'
+				},
+				{
+					id: 9,
+					time: '2025-06-20 17:20',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 10,
+					time: '2025-06-20 08:55',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 11,
+					time: '2025-06-19 14:10',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 12,
+					time: '2025-06-19 10:30',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 13,
+					time: '2025-06-18 16:45',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 14,
+					time: '2025-06-18 09:20',
+					type: '五',
+					method: '机入'
+				},
+				{
+					id: 15,
+					time: '2025-06-17 13:15',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 16,
+					time: '2025-06-17 11:00',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 17,
+					time: '2025-06-16 15:40',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 18,
+					time: '2025-06-16 08:30',
+					type: '五',
+					method: '机入'
+				},
+				{
+					id: 19,
+					time: '2025-06-15 14:25',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 20,
+					time: '2025-06-15 10:10',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 21,
+					time: '2025-06-14 16:30',
+					type: '大拇指',
+					method: '机入'
+				},
+				{
+					id: 22,
+					time: '2025-06-14 09:45',
+					type: '五',
+					method: '人入'
+				},
+				{
+					id: 23,
+					time: '2025-06-13 13:50',
+					type: '五',
+					method: '机入'
+				},
+				{
+					id: 24,
+					time: '2025-06-13 11:20',
+					type: '大拇指',
+					method: '人入'
+				}
+			];
+
+			// 分页和排序状态
+			let sortField = 'time';
+			let sortDirection = 'asc';
+			let currentPage = 1;
+			const recordsPerPage = 10;
+
+			// 类型图标映射
+			const typeIcons = {
+				'大拇指': 'fa-thumbs-up',
+				'五': 'fa-hand-paper-o'
+			};
+
+			// 入库方式映射
+			const methodText = {
+				'机入': '系统自动',
+				'人入': '人工录入'
+			};
+
+			// 计算总页数
+			function getTotalPages() {
+				return Math.ceil(violationData.length / recordsPerPage);
+			}
+
+			// 获取当前页的数据
+			function getCurrentPageData() {
+				const startIndex = (currentPage - 1) * recordsPerPage;
+				const endIndex = Math.min(startIndex + recordsPerPage, violationData.length);
+				return violationData.slice(startIndex, endIndex);
+			}
+
+			// 更新分页信息显示
+			function updatePaginationInfo() {
+				const totalPages = getTotalPages();
+				const startRecord = document.getElementById('startRecord');
+				const endRecord = document.getElementById('endRecord');
+				const paginationTotal = document.getElementById('paginationTotal');
+
+				paginationTotal.textContent = violationData.length;
+
+				if (violationData.length > 0) {
+					startRecord.textContent = (currentPage - 1) * recordsPerPage + 1;
+					endRecord.textContent = Math.min(currentPage * recordsPerPage, violationData.length);
+				} else {
+					startRecord.textContent = '0';
+					endRecord.textContent = '0';
+				}
+			}
+
+			// 渲染分页控件
+			function renderPaginationControls() {
+				const paginationControls = document.getElementById('paginationControls');
+				paginationControls.innerHTML = '';
+				const totalPages = getTotalPages();
+
+				// 添加"上一页"按钮
+				const prevBtn = document.createElement('button');
+				prevBtn.className = `pagination-btn ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`;
+				prevBtn.innerHTML = '<i class="fa fa-chevron-left text-xs"></i>';
+				prevBtn.addEventListener('click', () => {
+					if (currentPage > 1) {
+						currentPage--;
+						renderTable();
+					}
+				});
+				paginationControls.appendChild(prevBtn);
+
+				// 生成页码按钮
+				const maxVisiblePages = 5; // 最多显示的页码数
+				let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+				let endPage = Math.min(startPage + maxVisiblePages - 1, totalPages);
+
+				// 调整起始页，确保总显示maxVisiblePages个页码
+				if (endPage - startPage + 1 < maxVisiblePages) {
+					startPage = Math.max(1, endPage - maxVisiblePages + 1);
+				}
+
+				// 添加起始省略号
+				if (startPage > 1) {
+					const ellipsis = document.createElement('span');
+					ellipsis.className = 'px-3 py-1 text-gray-500';
+					ellipsis.textContent = '...';
+					paginationControls.appendChild(ellipsis);
+				}
+
+				// 添加页码按钮
+				for (let i = startPage; i <= endPage; i++) {
+					const pageBtn = document.createElement('button');
+					pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+					pageBtn.textContent = i;
+					pageBtn.addEventListener('click', () => {
+						currentPage = i;
+						renderTable();
+					});
+					paginationControls.appendChild(pageBtn);
+				}
+
+				// 添加结束省略号
+				if (endPage < totalPages) {
+					const ellipsis = document.createElement('span');
+					ellipsis.className = 'px-3 py-1 text-gray-500';
+					ellipsis.textContent = '...';
+					paginationControls.appendChild(ellipsis);
+				}
+
+				// 添加"下一页"按钮
+				const nextBtn = document.createElement('button');
+				nextBtn.className = `pagination-btn ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`;
+				nextBtn.innerHTML = '<i class="fa fa-chevron-right text-xs"></i>';
+				nextBtn.addEventListener('click', () => {
+					if (currentPage < totalPages) {
+						currentPage++;
+						renderTable();
+					}
+				});
+				paginationControls.appendChild(nextBtn);
+			}
+
+			// 排序函数
+			function sortData(field, direction) {
+				return [...violationData].sort((a, b) => {
+					if (field === 'time') {
+						return direction === 'asc' ?
+							new Date(a.time) - new Date(b.time) :
+							new Date(b.time) - new Date(a.time);
+					} else {
+						return direction === 'asc' ?
+							a[field].localeCompare(b[field]) :
+							b[field].localeCompare(a[field]);
+					}
+				});
+			}
+
+			// 统计今日违规数量
+			function countTodayViolations() {
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+
+				return violationData.filter(violation => {
+					const violationDate = new Date(violation.time);
+					violationDate.setHours(0, 0, 0, 0);
+					return violationDate.getTime() === today.getTime();
+				}).length;
+			}
+
+			// 统计昨日违规数量
+			function countYesterdayViolations() {
+				const today = new Date();
+				const yesterday = new Date(today);
+				yesterday.setDate(today.getDate() - 1);
+				yesterday.setHours(0, 0, 0, 0);
+
+				const yesterdayEnd = new Date(yesterday);
+				yesterdayEnd.setHours(23, 59, 59, 999);
+
+				return violationData.filter(violation => {
+					const violationDate = new Date(violation.time);
+					return violationDate >= yesterday && violationDate <= yesterdayEnd;
+				}).length;
+			}
+
+			// 统计本周违规数量（周一到周日）
+			function countWeekViolations() {
+				const today = new Date();
+				const startOfWeek = new Date(today);
+				// 获取本周一的日期：如果今天是周日(0)，则减去6天；否则减去当前星期几-1天
+				const dayOfWeek = today.getDay();
+				const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+				startOfWeek.setDate(today.getDate() - daysToSubtract);
+				startOfWeek.setHours(0, 0, 0, 0);
+
+				return violationData.filter(violation => {
+					const violationDate = new Date(violation.time);
+					return violationDate >= startOfWeek && violationDate <= today;
+				}).length;
+			}
+
+			// 统计上周违规数量（周一到周日）
+			function countLastWeekViolations() {
+				const today = new Date();
+				const dayOfWeek = today.getDay();
+				const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+				// 上周日（本周一的前一天）
+				const endOfLastWeek = new Date(today);
+				endOfLastWeek.setDate(today.getDate() - daysToSubtract - 1);
+				endOfLastWeek.setHours(23, 59, 59, 999);
+
+				// 上周一（上周日的前6天）
+				const startOfLastWeek = new Date(endOfLastWeek);
+				startOfLastWeek.setDate(endOfLastWeek.getDate() - 6);
+				startOfLastWeek.setHours(0, 0, 0, 0);
+
+				return violationData.filter(violation => {
+					const violationDate = new Date(violation.time);
+					return violationDate >= startOfLastWeek && violationDate <= endOfLastWeek;
+				}).length;
+			}
+
+			// 统计本月违规数量
+			function countMonthViolations() {
+				const today = new Date();
+				const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+				startOfMonth.setHours(0, 0, 0, 0);
+
+				return violationData.filter(violation => {
+					const violationDate = new Date(violation.time);
+					return violationDate >= startOfMonth && violationDate <= today;
+				}).length;
+			}
+
+			// 统计上月违规数量
+			function countLastMonthViolations() {
+				const today = new Date();
+				const startOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+				startOfThisMonth.setHours(0, 0, 0, 0);
+
+				const endOfLastMonth = new Date(startOfThisMonth);
+				endOfLastMonth.setMilliseconds(-1); // 上月最后一毫秒
+
+				const startOfLastMonth = new Date(endOfLastMonth.getFullYear(), endOfLastMonth.getMonth(), 1);
+				startOfLastMonth.setHours(0, 0, 0, 0);
+
+				return violationData.filter(violation => {
+					const violationDate = new Date(violation.time);
+					return violationDate >= startOfLastMonth && violationDate <= endOfLastMonth;
+				}).length;
+			}
+
+			// 更新统计卡片
+			function updateStatistics() {
+				const todayCount = countTodayViolations();
+				const weekCount = countWeekViolations();
+				const monthCount = countMonthViolations();
+
+				// 计算实际的前一周期数据
+				const yesterdayCount = countYesterdayViolations();
+				const lastWeekCount = countLastWeekViolations();
+				const lastMonthCount = countLastMonthViolations();
+
+				// 更新今日违规卡片
+				document.getElementById('todayCount').textContent = todayCount;
+				const todayChange = document.getElementById('todayChange');
+				const todayDiff = todayCount - yesterdayCount;
+				todayChange.innerHTML = yesterdayCount === 0 ?
+					`<i class="fa fa-arrow-up mr-1"></i> 较昨日 +${todayCount}` :
+					`${todayDiff > 0 ? '<i class="fa fa-arrow-up mr-1"></i>' : todayDiff < 0 ? '<i class="fa fa-arrow-down mr-1"></i>' : '<i class="fa fa-minus mr-1"></i>'} 较昨日 ${todayDiff > 0 ? '+' : ''}${todayDiff}`;
+				todayChange.className =
+					`text-sm mt-1 flex items-center ${todayDiff > 0 ? 'text-success' : todayDiff < 0 ? 'text-danger' : 'text-gray-500'}`;
+
+				// 更新本周违规卡片
+				document.getElementById('weekCount').textContent = weekCount;
+				const weekChange = document.getElementById('weekChange');
+				const weekDiff = weekCount - lastWeekCount;
+				weekChange.innerHTML = lastWeekCount === 0 ?
+					`<i class="fa fa-arrow-up mr-1"></i> 较上周 +${weekCount}` :
+					`${weekDiff > 0 ? '<i class="fa fa-arrow-up mr-1"></i>' : weekDiff < 0 ? '<i class="fa fa-arrow-down mr-1"></i>' : '<i class="fa fa-minus mr-1"></i>'} 较上周 ${weekDiff > 0 ? '+' : ''}${weekDiff}`;
+				weekChange.className =
+					`text-sm mt-1 flex items-center ${weekDiff > 0 ? 'text-success' : weekDiff < 0 ? 'text-danger' : 'text-gray-500'}`;
+
+				// 更新本月违规卡片
+				document.getElementById('monthCount').textContent = monthCount;
+				const monthChange = document.getElementById('monthChange');
+				const monthDiff = monthCount - lastMonthCount;
+				monthChange.innerHTML = lastMonthCount === 0 ?
+					`<i class="fa fa-arrow-up mr-1"></i> 较上月 +${monthCount}` :
+					`${monthDiff > 0 ? '<i class="fa fa-arrow-up mr-1"></i>' : monthDiff < 0 ? '<i class="fa fa-arrow-down mr-1"></i>' : '<i class="fa fa-minus mr-1"></i>'} 较上月 ${monthDiff > 0 ? '+' : ''}${monthDiff}`;
+				monthChange.className =
+					`text-sm mt-1 flex items-center ${monthDiff > 0 ? 'text-success' : monthDiff < 0 ? 'text-danger' : 'text-gray-500'}`;
+
+				// 更新总记录数
+				document.getElementById('totalCount').textContent = violationData.length;
+			}
+
+			// 渲染表格数据
+			function renderViolationTable() {
+				const tableBody = document.getElementById('violationTableBody');
+				tableBody.innerHTML = '';
+
+				// 先对数据进行排序
+				const sortedData = sortData(sortField, sortDirection);
+
+				// 获取当前页的数据
+				const pageData = sortedData.slice(
+					(currentPage - 1) * recordsPerPage,
+					currentPage * recordsPerPage
+				);
+
+				pageData.forEach(violation => {
+					const row = document.createElement('tr');
+					row.className = 'table-row-hover';
+
+					row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${violation.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${violation.time}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i class="fa ${typeIcons[violation.type]} text-danger mr-2"></i>
+                            <span class="text-sm text-gray-900">${violation.type}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full ${violation.method === '机入' ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-600'}">
+                            ${methodText[violation.method]}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex space-x-3">
+                            <a href="#" class="text-info hover:text-primary transition-colors" title="查看详情">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                            <button class="delete-btn text-danger hover:text-danger/80 transition-colors" data-id="${violation.id}" title="删除记录">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+
+					tableBody.appendChild(row);
+				});
+
+				// 添加删除事件监听
+				document.querySelectorAll('.delete-btn').forEach(btn => {
+					btn.addEventListener('click', handleDeleteClick);
+				});
+
+				// 更新排序图标
+				updateSortIcons();
+			}
+
+			// 更新排序图标
+			function updateSortIcons() {
+				document.querySelectorAll('.sort-icon').forEach(icon => {
+					icon.classList.remove('active', 'fa-sort-asc', 'fa-sort-desc');
+					icon.classList.add('fa-sort');
+				});
+
+				const activeIcon = document.querySelector(`[data-sort="${sortField}"] .sort-icon`);
+				if (activeIcon) {
+					activeIcon.classList.add('active', sortDirection === 'asc' ? 'fa-sort-asc' : 'fa-sort-desc');
+					activeIcon.classList.remove('fa-sort');
+				}
+			}
+
+			// 处理排序点击
+			function handleSortClick(e) {
+				const field = e.target.closest('.sortable-header').dataset.sort;
+
+				if (sortField === field) {
+					sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+				} else {
+					sortField = field;
+					sortDirection = 'asc';
+				}
+
+				renderTable();
+			}
+
+			// 处理删除按钮点击
+			function handleDeleteClick(e) {
+				const id = parseInt(e.target.closest('.delete-btn').dataset.id);
+				if (confirm('确定要删除这条违规记录吗？此操作不可恢复。')) {
+					const row = e.target.closest('tr');
+					row.classList.add('animate-fadeOut');
+
+					// 动画结束后移除行
+					setTimeout(() => {
+						const index = violationData.findIndex(v => v.id === id);
+						if (index !== -1) {
+							violationData.splice(index, 1);
+
+							// 如果删除后当前页没有数据，跳转到上一页
+							if ((currentPage - 1) * recordsPerPage >= violationData.length && currentPage > 1) {
+								currentPage--;
+							}
+
+							// 更新统计信息
+							updateStatistics();
+						}
+						renderTable();
+					}, 300);
+				}
+			}
+
+			// 渲染整个表格和分页
+			function renderTable() {
+				renderViolationTable();
+				renderPaginationControls();
+				updatePaginationInfo();
+				updateStatistics(); // 更新统计卡片
+			}
+
+			// 页面加载完成后渲染表格并添加排序事件监听
+			document.addEventListener('DOMContentLoaded', () => {
+				renderTable();
+
+				// 添加排序事件监听
+				document.querySelectorAll('.sortable-header').forEach(header => {
+					header.addEventListener('click', handleSortClick);
+				});
+
+				// 添加刷新按钮事件监听
+				document.querySelector('button.bg-primary').addEventListener('click', renderTable);
+			});
+		</script>
+	</body>
+</html>

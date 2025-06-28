@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主播行为判断系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        sidebar: '#1E293B',
+                        success: '#36D399',
+                        danger: '#F87272',
+                        warning: '#FBBD23'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .nav-item-active {
+                @apply bg-primary/20 text-primary border-r-4 border-primary;
+            }
+            .status {
+                @apply mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300;
+            }
+            .status.error {
+                @apply bg-danger/10 text-danger;
+            }
+            .status.success {
+                @apply bg-success/10 text-success;
+            }
+            .judge-modal {
+                @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden;
+            }
+            .judge-content {
+                @apply bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl;
+            }
+            .judge-title {
+                @apply text-lg font-semibold mb-4 flex items-center;
+            }
+            .judge-options {
+                @apply space-y-3 mb-6;
+            }
+            .judge-option {
+                @apply flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors;
+            }
+            .judge-option.active {
+                @apply bg-primary/10 text-primary border-primary;
+            }
+            .result-item {
+                @apply flex items-center justify-between p-3 rounded-md mb-2;
+            }
+            .result-item违规 {
+                @apply bg-danger/10 text-danger;
+            }
+            .result-item合规 {
+                @apply bg-success/10 text-success;
+            }
+            .result-item检查 {
+                @apply bg-warning/10 text-warning;
+            }
+            .camera-container {
+                @apply max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm mb-8;
+            }
+            .camera-container video {
+                @apply w-full h-auto rounded-lg border border-gray-200 shadow-md;
+            }
+            .camera-container button {
+                @apply mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center mx-auto;
+            }
+            .recognition-results {
+                @apply mt-6 bg-white p-4 rounded-md shadow-sm;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-gray-800">
+<div class="flex min-h-screen">
+    <!-- 垂直导航栏 -->
+    <aside class="bg-sidebar text-white w-64 h-screen fixed left-0 top-0 z-30">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                    <i class="fa fa-bars text-xl"></i>
+                </div>
+                <h2 class="text-xl font-bold">目录</h2>
+            </div>
+        </div>
+
+        <nav class="p-2">
+            <ul class="space-y-1">
+                <li>
+                    <a href="#" class="nav-item-active flex items-center space-x-3 p-3 rounded-lg transition-all duration-200">
+                        <i class="fa fa-home w-5 text-center"></i>
+                        <span>行为识别</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+                        <i class="fa fa-cog w-5 text-center"></i>
+                        <span>违规记录</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+                        <i class="fa fa-info-circle w-5 text-center"></i>
+                        <span>设置</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
+                        <i class="fa fa-question-circle w-5 text-center"></i>
+                        <span>帮助</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+            <div class="flex items-center space-x-3">
+                <img src="https://picsum.photos/32/32?random=100" alt="用户头像" class="w-8 h-8 rounded-full">
+                <div>
+                    <p class="text-sm font-medium">用户名称</p>
+                    <p class="text-xs text-gray-400">user@example.com</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="ml-64 flex-1 p-6">
+        <!-- 摄像头组件 -->
+        <div class="camera-container">
+            <h3 class="text-lg font-semibold mb-4">实时预览</h3>
+            <video id="video" autoplay muted playsinline></video>
+            <button id="captureAndSaveBtn">截图并发送JSON</button>
+            <div id="status" class="status"></div>
+            <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+            <!-- 识别结果区域 -->
+            <div class="recognition-results">
+                <h4>识别结果：</h4>
+                <div id="resultList"></div>
+            </div>
+        </div>
+
+        <!-- 人工判断模态框 -->
+        <div id="judgeModal" class="judge-modal">
+            <div class="judge-content">
+                <h3 id="judgeTitle">人工判断</h3>
+                <img id="judgeImage" class="judge-image" src="" alt="待判断图片">
+                <div class="judge-actions">
+                    <button id="btn违规" class="px-4 py-2 bg-danger text-white rounded-lg mr-2">违规</button>
+                    <button id="btn不违规" class="px-4 py-2 bg-success text-white rounded-lg">不违规</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureAndSaveBtn = document.getElementById('captureAndSaveBtn');
+    const status = document.getElementById('status');
+    const resultList = document.getElementById('resultList');
+    const judgeModal = document.getElementById('judgeModal');
+    const judgeTitle = document.getElementById('judgeTitle');
+    const judgeImage = document.getElementById('judgeImage');
+    const btn违规 = document.getElementById('btn违规');
+    const btn不违规 = document.getElementById('btn不违规');
+
+    // 全局变量
+    let recognitionResults = []; // 存储识别结果
+    let currentIndex = 0;        // 当前处理的结果索引
+    let judgmentResults = [];    // 存储用户判断结果
+
+    // 获取应用上下文路径
+    const getContextPath = () => {
+        const path = window.location.pathname;
+        return path.substring(0, path.indexOf('/', 1)) || '';
+    };
+
+    // 初始化摄像头
+    async function initCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            status.textContent = '摄像头已启动，点击"截图并发送JSON"按钮';
+            status.className = 'status';
+        } catch (error) {
+            status.textContent = `摄像头启动失败: ${error.message}`;
+            status.className = 'status error';
+        }
+    }
+
+    // 截图并发送JSON到服务器
+    async function captureAndSave() {
+        status.textContent = '正在处理...';
+        status.className = 'status';
+        recognitionResults = [];
+        currentIndex = 0;
+        judgmentResults = [];
+        resultList.innerHTML = ''; // 清空结果列表
+
+        try {
+            // 1. 截图
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 2. 生成PNG格式的Base64数据
+            const imageData = canvas.toDataURL('image/png').split(',')[1];
+
+            // 3. 构建请求JSON（包含imageData和测试字段）
+            const requestData = {
+                imageData: imageData,
+                testField: "测试数据",
+                timestamp: new Date().getTime()
+            };
+            const requestJson = JSON.stringify(requestData);
+
+            // 4. 发送到服务器
+            const contextPath = getContextPath();
+            const response = await fetch(`${contextPath}/api/gesture/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: requestJson
+            });
+
+            const responseText = await response.text();
+
+            // 5. 处理结果
+            if (response.ok) {
+                status.textContent = 'JSON发送成功，已收到服务器响应';
+                status.className = 'status success';
+
+                // 解析响应数据
+                try {
+                    const responseData = JSON.parse(responseText);
+                    if (responseData.result && responseData.result.length > 0) {
+                        // 过滤出id不为0的项进行人工判断
+                        // 同时自动处理id为0的项
+                        responseData.result.forEach(item => {
+                            if (item.id === 0) {
+                                // 自动标记为不违规
+                                judgmentResults.push({
+                                    id: item.id,
+                                    classname: item.classname,
+                                    url: "no" // 注意这里使用url字段
+                                });
+                            } else {
+                                recognitionResults.push(item);
+                            }
+                        });
+
+                        // 初始渲染结果（包含自动处理的项）
+                        renderRecognitionResults();
+
+                        if (recognitionResults.length > 0) {
+                            // 开始处理第一条需要人工判断的记录
+                            processNextItem();
+                        } else {
+                            // 没有需要人工判断的项目，直接提交结果
+                            if (judgmentResults.length > 0) {
+                                sendJudgmentResults();
+                            } else {
+                                status.textContent = '没有需要处理的识别结果';
+                                status.className = 'status warning';
+                            }
+                        }
+                    } else {
+                        status.textContent = '未获取到有效识别结果';
+                        status.className = 'status warning';
+                    }
+                } catch (parseError) {
+                    status.textContent = '解析响应数据失败';
+                    status.className = 'status error';
+                }
+            } else {
+                status.textContent = `发送失败: ${response.statusText}`;
+                status.className = 'status error';
+            }
+
+        } catch (error) {
+            status.textContent = `操作异常: ${error.message}`;
+            status.className = 'status error';
+        }
+    }
+
+    // 处理下一个识别项
+    function processNextItem() {
+        if (currentIndex >= recognitionResults.length) {
+            // 所有需要人工判断的项目处理完毕，发送结果回后端
+            sendJudgmentResults();
+            return;
+        }
+
+        const item = recognitionResults[currentIndex];
+        judgeTitle.textContent = `判断: ${item.classname} (ID: ${item.id})`;
+
+        // 处理图片路径
+        judgeImage.src = item.url;
+        judgeImage.onerror = () => {
+            // 如果图片加载失败，使用截图作为备选
+            judgeImage.src = canvas.toDataURL('image/png');
+            status.textContent = '无法加载远程图片，使用截图替代';
+            status.className = 'status warning';
+        };
+
+        judgeModal.style.display = 'flex';
+    }
+
+    // 关闭判断模态框
+    function closeJudgeModal() {
+        judgeModal.style.display = 'none';
+    }
+
+    // 处理判断结果
+    function handleJudgment(isViolation) {
+        const item = recognitionResults[currentIndex];
+        const result = {
+            id: item.id,
+            classname: item.classname,
+            url: isViolation ? "yes" : "no" // 注意这里使用url字段
+        };
+
+        judgmentResults.push(result);
+        currentIndex++;
+        closeJudgeModal();
+
+        // 每次判断后更新结果列表
+        renderRecognitionResults();
+
+        if (currentIndex < recognitionResults.length) {
+            // 处理下一项
+            processNextItem();
+        } else {
+            // 所有需要人工判断的项目处理完毕，发送结果回后端
+            sendJudgmentResults();
+        }
+    }
+
+    // 发送判断结果回后端
+    async function sendJudgmentResults() {
+        if (judgmentResults.length === 0) {
+            status.textContent = '没有需要提交的判断结果';
+            status.className = 'status warning';
+            return;
+        }
+
+        status.textContent = '正在提交判断结果...';
+        status.className = 'status';
+
+        try {
+            const responseData = {
+                result: judgmentResults
+            };
+
+            const responseJson = JSON.stringify(responseData);
+
+            const contextPath = getContextPath();
+            const response = await fetch(`${contextPath}/api/gesture/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: responseJson
+            });
+
+            const responseText = await response.text();
+
+            if (response.ok) {
+                status.textContent = '判断结果已成功提交';
+                status.className = 'status success';
+            } else {
+                status.textContent = `提交失败: ${response.statusText}`;
+                status.className = 'status error';
+            }
+        } catch (error) {
+            status.textContent = `提交异常: ${error.message}`;
+            status.className = 'status error';
+        } finally {
+            // 提交后再次更新结果列表
+            renderRecognitionResults();
+        }
+    }
+
+    // 渲染识别结果
+    function renderRecognitionResults() {
+        resultList.innerHTML = ''; // 清空原有内容
+
+        // 合并识别结果和判断结果（根据id匹配）
+        const allResults = [...recognitionResults, ...judgmentResults];
+        const uniqueResults = [];
+        const seenIds = new Set();
+
+        // 去重并合并（判断结果覆盖识别结果）
+        for (const result of allResults.reverse()) { // 逆序遍历，让判断结果优先
+            if (!seenIds.has(result.id)) {
+                seenIds.add(result.id);
+                uniqueResults.unshift(result); // 保持顺序
+            }
+        }
+
+        if (uniqueResults.length === 0) {
+            resultList.innerHTML = '<div class="text-gray-500 italic">暂无识别结果</div>';
+            return;
+        }
+
+        uniqueResults.forEach((item, index) => {
+            let statusText = '';
+            let bgClass = '';
+            let iconClass = '';
+            let tagText = `ID: ${item.id}, 类型: ${item.classname}`;
+
+            // 根据业务逻辑判断状态
+            if (item.url === 'yes' || item.人工判断 === '违规') {
+                statusText = '违规';
+                bgClass = 'bg-danger/10';
+                iconClass = 'fa-exclamation-circle';
+            } else if (item.url === 'no' || item.人工判断 === '不违规') {
+                statusText = '合规';
+                bgClass = 'bg-success/10';
+                iconClass = 'fa-check-circle';
+            } else {
+                statusText = '待检查';
+                bgClass = 'bg-warning/10';
+                iconClass = 'fa-question-circle';
+            }
+
+            const resultItem = document.createElement('div');
+            resultItem.className = `result-item ${bgClass} animate-fade-in`;
+            resultItem.innerHTML = `
+                <div class="flex items-center">
+                    <span class="text-sm font-medium mr-2">${index + 1}.</span>
+                    <i class="fa ${iconClass} mr-2 text-lg"></i>
+                    <span class="font-medium">${statusText}</span>
+                    <span class="ml-3 px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-xs">${tagText}</span>
+                </div>
+            `;
+            resultList.appendChild(resultItem);
+        });
+    }
+
+    // 绑定事件
+    window.onload = initCamera();
+    captureAndSaveBtn.addEventListener('click', captureAndSave);
+    btn违规.addEventListener('click', () => handleJudgment(true));
+    btn不违规.addEventListener('click', () => handleJudgment(false));
+</script>
+</body>
+</html>
